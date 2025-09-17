@@ -24,8 +24,11 @@ public class main {
 
         System.out.print("Enter Contact: ");
         String contact = sc.next(); 
+        
+        System.out.print("Enter Role (Admin/Customer): ");
+        String role = sc.next(); 
 
-        String sql = "INSERT INTO tbl_users (a_name, a_email, a_pass, a_address, a_contact) VALUES (?, ?, ?, ?, ?)";
-        conf.addRecord(sql, name, email, pass, address, contact);
+        String sql = "INSERT INTO tbl_users (u_name, u_pass, u_email, u_address, u_contact, u_role) VALUES (?, ?, ?, ?, ?, ?)";
+        conf.addRecord(sql, name, email, pass, address, contact, role);
     }
 }
