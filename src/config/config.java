@@ -1,21 +1,16 @@
+
 package config;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class config {
     
-    //Connection Method to SQLITE
-    //Connection Method to SQLITE
-public static Connection connectDB() {
+    public static Connection connectDB() {
         Connection con = null;
         try {
             Class.forName("org.sqlite.JDBC"); // Load the SQLite JDBC driver
             con = DriverManager.getConnection("jdbc:sqlite:loan.db"); // Establish connection
-            System.out.println("Connection Successful");
+            //System.out.println("Connection Successful");
         } catch (Exception e) {
             System.out.println("Connection Failed: " + e);
         }
@@ -49,18 +44,14 @@ public static Connection connectDB() {
             }
         }
 
-            pstmt.executeUpdate();
-            System.out.println("Record added successfully!");
-        } catch (SQLException e) {
-            System.out.println("Error adding record: " + e.getMessage());
-        }
+        pstmt.executeUpdate();
+        System.out.println("Record added successfully!");
+    } catch (SQLException e) {
+        System.out.println("Error adding record: " + e.getMessage());
     }
+}
     
-    //---------------------------------------------------------------------------------------------------------------
-    //VIEW METHOD
-    //---------------------------------------------------------------------------------------------------------------
-    
-     
+// Dynamic view method to display records from any table
     public void viewRecords(String sqlQuery, String[] columnHeaders, String[] columnNames) {
         // Check that columnHeaders and columnNames arrays are the same length
         if (columnHeaders.length != columnNames.length) {
@@ -74,11 +65,11 @@ public static Connection connectDB() {
 
             // Print the headers dynamically
             StringBuilder headerLine = new StringBuilder();
-            headerLine.append("--------------------------------------------------------------------------------------------------------------------\n| ");
+            headerLine.append("--------------------------------------------------------------------------------\n| ");
             for (String header : columnHeaders) {
                 headerLine.append(String.format("%-20s | ", header)); // Adjust formatting as needed
             }
-            headerLine.append("\n-------------------------------------------------------------------------------------------------------------------");
+            headerLine.append("\n--------------------------------------------------------------------------------");
 
             System.out.println(headerLine.toString());
 
@@ -91,7 +82,7 @@ public static Connection connectDB() {
                 }
                 System.out.println(row.toString());
             }
-            System.out.println("-------------------------------------------------------------------------------------------------------------------");
+            System.out.println("--------------------------------------------------------------------------------");
 
         } catch (SQLException e) {
             System.out.println("Error retrieving records: " + e.getMessage());
@@ -102,7 +93,7 @@ public static Connection connectDB() {
     //-----------------------------------------------
     // UPDATE METHOD
     //-----------------------------------------------
-
+    
     public void updateRecord(String sql, Object... values) {
         try (Connection conn = this.connectDB(); // Use the connectDB method
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -137,11 +128,6 @@ public static Connection connectDB() {
         }
     }
     
-    
-    //-----------------------------------------------
-    // DELETE METHOD
-    //-----------------------------------------------
-
     // Add this method in the config class
 public void deleteRecord(String sql, Object... values) {
     try (Connection conn = this.connectDB();
@@ -162,6 +148,37 @@ public void deleteRecord(String sql, Object... values) {
         System.out.println("Error deleting record: " + e.getMessage());
     }
 }
-    
+
+
+public java.util.List<java.util.Map<String, Object>> fetchRecords(String sqlQuery, Object... values) {
+    java.util.List<java.util.Map<String, Object>> records = new java.util.ArrayList<>();
+
+    try (Connection conn = this.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(sqlQuery)) {
+
+        for (int i = 0; i < values.length; i++) {
+            pstmt.setObject(i + 1, values[i]);
+        }
+
+        ResultSet rs = pstmt.executeQuery();
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        while (rs.next()) {
+            java.util.Map<String, Object> row = new java.util.HashMap<>();
+            for (int i = 1; i <= columnCount; i++) {
+                row.put(metaData.getColumnName(i), rs.getObject(i));
+            }
+            records.add(row);
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error fetching records: " + e.getMessage());
+    }
+
+    return records;
+}
+
+
     
 }
