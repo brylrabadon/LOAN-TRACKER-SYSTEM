@@ -67,8 +67,10 @@ public class Main {
                                                     con.updateRecord(sql, "Approved", ids);
                                                     break;
                                             }
-                                    }else if(type.equals("Teacher")){
+                                    }else if(type.equals("Borrower")){
                                         System.out.println("WELCOME TO BORROWER DASHBOARD");
+                                        System.out.println("1. Approve Account!");
+                                        int respo = sc.nextInt();
                                     }
                                     
                                     break;
