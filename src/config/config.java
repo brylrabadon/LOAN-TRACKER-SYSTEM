@@ -179,6 +179,39 @@ public java.util.List<java.util.Map<String, Object>> fetchRecords(String sqlQuer
     return records;
 }
 
+public void viewRecords(String query, String[] headers, String[] columns, Object... params) {
+    try (Connection conn = connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-    
+        // Set query parameters (like userId)
+        for (int i = 0; i < params.length; i++) {
+            pstmt.setObject(i + 1, params[i]);
+        }
+
+        ResultSet rs = pstmt.executeQuery();
+
+        // --- Table Header ---
+        System.out.println("--------------------------------------------------------------------------------------");
+        for (String header : headers) {
+            System.out.printf("%-20s", header); // Align all columns to 20 characters width
+        }
+        System.out.println();
+        System.out.println("--------------------------------------------------------------------------------------");
+
+        // --- Table Rows ---
+        while (rs.next()) {
+            for (String column : columns) {
+                Object value = rs.getObject(column);
+                System.out.printf("%-20s", (value == null ? "—" : value.toString())); // replace null with "—"
+            }
+            System.out.println();
+        }
+
+        System.out.println("--------------------------------------------------------------------------------------");
+
+    } catch (Exception e) {
+        System.out.println("Error viewing records: " + e.getMessage());
+    }
+  }
+
 }
