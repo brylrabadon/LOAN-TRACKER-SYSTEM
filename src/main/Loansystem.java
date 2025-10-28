@@ -28,7 +28,8 @@ public class Loansystem {
             System.out.println("6. View All Payment History");
             System.out.println("7. Approve / Reject Collateral");
             System.out.println("8. View Collaterals");
-            System.out.println("9. Logout");
+            System.out.println("9. Audit Borrower Portfolio (Users, Loans, Payments, Collaterals)");
+            System.out.println("10. Logout");
             System.out.print("Enter your choice: ");
             adminChoice = sc.nextInt();
 
@@ -59,12 +60,15 @@ public class Loansystem {
                     viewAllCollaterals();
                     break;
                 case 9:
+                    auditBorrowerPortfolio();
+                    break;
+                case 10:
                     System.out.println("Logging out from Admin Dashboard...");
                     break;
                 default:
                     System.out.println("Invalid choice. Please try again.");
             }
-        } while (adminChoice != 9);
+        } while (adminChoice != 10);
     }
 
     private static void handleLoanApproval() {
@@ -78,15 +82,19 @@ public class Loansystem {
         System.out.print("Enter new status (Approved/Rejected): ");
         String status = sc.next();
 
-        String sql = "UPDATE tbl_loans SET l_status = ?, l_date_approved = date('now') WHERE l_id = ?";
+        String sql;
+        // The SQL is simplified since l_date_approved is removed
+        sql = "UPDATE tbl_loans SET l_status = ? WHERE l_id = ?";
+
         conf.updateRecord(sql, status, loanId);
         System.out.println("Loan " + loanId + " updated to " + status + ".");
     }
 
     private static void viewAllLoans() {
-        String query = "SELECT l_id, u_id, l_amount, l_interest_rate, l_status, l_date_applied, l_date_approved FROM tbl_loans";
-        String[] headers = {"Loan ID", "User ID", "Amount", "Interest Rate", "Status", "Date Applied", "Date Approved"};
-        String[] columns = {"l_id", "u_id", "l_amount", "l_interest_rate", "l_status", "l_date_applied", "l_date_approved"};
+        // l_date_approved removed from SELECT
+        String query = "SELECT l_id, u_id, l_amount, l_interest_rate, l_status, l_date_applied FROM tbl_loans";
+        String[] headers = {"Loan ID", "User ID", "Amount", "Interest Rate", "Status", "Date Applied"};
+        String[] columns = {"l_id", "u_id", "l_amount", "l_interest_rate", "l_status", "l_date_applied"};
         conf.viewRecords(query, headers, columns);
     }
 
@@ -119,7 +127,7 @@ public class Loansystem {
         String[] columns = {"c_id", "l_id", "c_type", "c_description", "c_value", "c_status"};
         conf.viewRecords(query, headers, columns);
 
-        String sql = "UPDATE tbl_collaterals SET c_status = ?, c_date_added = date('now') WHERE c_id = ?";
+        String sql = "UPDATE tbl_collaterals SET c_status = ? WHERE c_id = ?";
         conf.updateRecord(sql, status, colId);
 
         System.out.println("Collateral " + colId + " updated to " + status + ".");
@@ -131,6 +139,27 @@ public class Loansystem {
         String[] headers = {"Collateral ID", "Loan ID", "Type", "Description", "Value", "Status", "Date Added"};
         String[] columns = {"c_id", "l_id", "c_type", "c_description", "c_value", "c_status", "c_date_added"};
         conf.viewRecords(query, headers, columns);
+    }
+
+    private static void auditBorrowerPortfolio() {
+        System.out.println("\n--- AUDIT BORROWER PORTFOLIO ---");
+
+        String query = "SELECT u_id, u_name, u_email FROM tbl_users WHERE u_type = 'Borrower' AND u_status = 'Approved'";
+        String[] headers = {"User ID", "Name", "Email"};
+        String[] columns = {"u_id", "u_name", "u_email"};
+        conf.viewRecords(query, headers, columns);
+
+        System.out.print("Enter Borrower User ID to audit: ");
+        int borrowerId = sc.nextInt();
+
+        System.out.println("\n--- LOANS FOR USER ID " + borrowerId + " ---");
+        viewMyLoans(borrowerId);
+
+        System.out.println("\n--- PAYMENT HISTORY FOR USER ID " + borrowerId + " ---");
+        viewPaymentHistory(borrowerId);
+
+        System.out.println("\n--- COLLATERALS FOR USER ID " + borrowerId + " ---");
+        viewMyCollaterals(borrowerId);
     }
 
 
@@ -190,6 +219,7 @@ public class Loansystem {
         System.out.print("Enter Date Applied (MM-DD-YYYY): ");
         String dateApplied = sc.nextLine();
 
+        // l_date_approved is no longer included in the INSERT statement
         String sql = "INSERT INTO tbl_loans (u_id, l_amount, l_interest_rate, l_purpose, l_status, l_date_applied) VALUES (?, ?, ?, ?, 'Pending', ?)";
         conf.addRecord(sql, userId, amount, interest, purpose, dateApplied);
         System.out.println("Loan application submitted successfully. Please wait for admin approval.");
@@ -227,9 +257,10 @@ public class Loansystem {
 
     // --- VIEW LOANS ---
     private static void viewMyLoans(int userId) {
-        String query = "SELECT l_id, l_amount, l_interest_rate, l_status, l_date_applied, l_date_approved FROM tbl_loans WHERE u_id = ?";
-        String[] headers = {"Loan ID", "Amount", "Interest Rate", "Status", "Date Applied", "Date Approved"};
-        String[] columns = {"l_id", "l_amount", "l_interest_rate", "l_status", "l_date_applied", "l_date_approved"};
+        // l_date_approved removed from SELECT
+        String query = "SELECT l_id, l_amount, l_interest_rate, l_status, l_date_applied FROM tbl_loans WHERE u_id = ?";
+        String[] headers = {"Loan ID", "Amount", "Interest Rate", "Status", "Date Applied"};
+        String[] columns = {"l_id", "l_amount", "l_interest_rate", "l_status", "l_date_applied"};
         conf.viewRecords(query, headers, columns, userId);
     }
 
@@ -242,10 +273,8 @@ public class Loansystem {
 
     private static void addCollateral(int userId) {
         System.out.println("\n--- ADD COLLATERAL ---");
-        String query = "SELECT l_id, l_status FROM tbl_loans WHERE u_id = ? AND l_status = 'Pending'";
-        String[] headers = {"Loan ID", "Status"};
-        String[] columns = {"l_id", "l_status"};
-        conf.viewRecords(query, headers, columns, userId);
+
+        viewMyLoans(userId);
 
         System.out.print("Enter Loan ID to attach collateral: ");
         int loanId = sc.nextInt();
@@ -258,16 +287,18 @@ public class Loansystem {
         System.out.print("Enter Collateral Estimated Value: ");
         double value = sc.nextDouble();
 
-        String sql = "INSERT INTO tbl_collaterals (l_id, c_type, c_description, c_value) VALUES (?, ?, ?, ?)";
+        // SQL updated to include c_status='Pending' and c_date_add=date('now')
+        String sql = "INSERT INTO tbl_collaterals (l_id, c_type, c_description, c_value, c_status, c_date_added) VALUES (?, ?, ?, ?, 'Pending', date('now'))";
         conf.addRecord(sql, loanId, type, description, value);
 
-        System.out.println("\n✅ Collateral added successfully and linked to Loan ID " + loanId);
+        System.out.println("\n✅ Collateral added successfully and linked to Loan ID " + loanId + ". Awaiting admin approval.");
     }
+
     private static void viewMyCollaterals(int userId) {
-        String query = "SELECT c_id, l_id, c_type, c_description, c_value, c_status " +
-                       "FROM tbl_collaterals WHERE l_id IN (SELECT l_id FROM tbl_loans WHERE u_id = ?)";
-        String[] headers = {"Collateral ID", "Loan ID", "Type", "Description", "Value", "Status"};
-        String[] columns = {"c_id", "l_id", "c_type", "c_description", "c_value", "c_status"};
+        String query = "SELECT c_id, l_id, c_type, c_description, c_value, c_status, c_date_added " +
+                        "FROM tbl_collaterals WHERE l_id IN (SELECT l_id FROM tbl_loans WHERE u_id = ?)";
+        String[] headers = {"Collateral ID", "Loan ID", "Type", "Description", "Value", "Status", "Date Added"};
+        String[] columns = {"c_id", "l_id", "c_type", "c_description", "c_value", "c_status", "c_date_added"};
         conf.viewRecords(query, headers, columns, userId);
     }
 
@@ -293,8 +324,8 @@ public class Loansystem {
                     handleRegistration();
                     break;
                 case 3:
-                    handleAccountApproval();
-                    break;
+                    System.out.println("Exiting Loan System. Goodbye!");
+                    return;
                 default:
                     System.out.println("Invalid choice.");
             }
@@ -310,8 +341,10 @@ public class Loansystem {
         System.out.print("Enter password: ");
         String pas = sc.next();
 
+        String hashedPass = conf.hashPassword(pas);
+
         String qry = "SELECT * FROM tbl_users WHERE u_email = ? AND u_pass = ?";
-        java.util.List<java.util.Map<String, Object>> result = conf.fetchRecords(qry, em, pas);
+        java.util.List<java.util.Map<String, Object>> result = conf.fetchRecords(qry, em, hashedPass);
 
         if (result.isEmpty()) {
             System.out.println("INVALID CREDENTIALS");
@@ -354,11 +387,13 @@ public class Loansystem {
         System.out.print("Enter Password: ");
         String pass = sc.next();
 
+        String hashedPass = conf.hashPassword(pass);
+
         String sql = "INSERT INTO tbl_users (u_name, u_email, u_type, u_status, u_pass, u_contact, u_address) VALUES (?, ?, ?, 'Pending', ?, ?, ?)";
-        conf.addRecord(sql, name, email, type, pass, contact, address);
+        conf.addRecord(sql, name, email, type, hashedPass, contact, address);
         System.out.println("Registration successful! Await admin approval.");
-        
-}
+
+    }
 
     private static void handleAccountApproval() {
         System.out.println("\n--- APPROVE / REJECT USER ACCOUNT ---");
